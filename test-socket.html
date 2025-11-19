@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.io Test Client</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin-bottom: 20px;
+        color: #5865f2;
+      }
+      .section {
+        background: #2b2d31;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      input,
+      button,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      input,
+      textarea {
+        background: #383a40;
+        color: #fff;
+      }
+      button {
+        background: #5865f2;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button:hover {
+        background: #4752c4;
+      }
+      button:disabled {
+        background: #4e5058;
+        cursor: not-allowed;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-weight: bold;
+      }
+      .status.connected {
+        background: #23a559;
+      }
+      .status.disconnected {
+        background: #f23f43;
+      }
+      #messages {
+        background: #313338;
+        padding: 15px;
+        border-radius: 4px;
+        max-height: 400px;
+        overflow-y: auto;
+        margin: 10px 0;
+      }
+      .message {
+        padding: 8px;
+        margin: 5px 0;
+        background: #383a40;
+        border-radius: 4px;
+        border-left: 3px solid #5865f2;
+      }
+      .message.error {
+        border-left-color: #f23f43;
+      }
+      .message.success {
+        border-left-color: #23a559;
+      }
+      .message-time {
+        font-size: 11px;
+        color: #949ba4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 Socket.io Test Client</h1>
+
+      <!-- Connection Section -->
+      <div class="section">
+        <h2>1. Connection</h2>
+        <input type="text" id="token" placeholder="Paste your JWT token here" />
+        <button id="connectBtn">Connect to Socket.io</button>
+        <button id="disconnectBtn" disabled>Disconnect</button>
+        <div id="connectionStatus" class="status disconnected">
+          Status: Disconnected
+        </div>
+      </div>
+
+      <!-- Join Channel Section -->
+      <div class="section">
+        <h2>2. Join Channel</h2>
+        <input
+          type="text"
+          id="channelId"
+          placeholder="Channel ID (UUID from Postman)"
+        />
+        <button id="joinChannelBtn" disabled>Join Channel</button>
+        <button id="leaveChannelBtn" disabled>Leave Channel</button>
+      </div>
+
+      <!-- Send Message Section -->
+      <div class="section">
+        <h2>3. Send Message</h2>
+        <textarea
+          id="messageContent"
+          placeholder="Type your message..."
+          rows="3"
+        ></textarea>
+        <button id="sendMessageBtn" disabled>Send Message to Channel</button>
+      </div>
+
+      <!-- Messages Display -->
+      <div class="section">
+        <h2>4. Messages & Events</h2>
+        <button onclick="clearMessages()">Clear Messages</button>
+        <div id="messages"></div>
+      </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      let socket = null;
+      let currentChannelId = null;
+
+      const elements = {
+        token: document.getElementById("token"),
+        connectBtn: document.getElementById("connectBtn"),
+        disconnectBtn: document.getElementById("disconnectBtn"),
+        connectionStatus: document.getElementById("connectionStatus"),
+        channelId: document.getElementById("channelId"),
+        joinChannelBtn: document.getElementById("joinChannelBtn"),
+        leaveChannelBtn: document.getElementById("leaveChannelBtn"),
+        messageContent: document.getElementById("messageContent"),
+        sendMessageBtn: document.getElementById("sendMessageBtn"),
+        messages: document.getElementById("messages"),
+      };
+
+      // Helper: Add message to display
+      function addMessage(text, type = "info") {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${type}`;
+        const time = new Date().toLocaleTimeString();
+        msgDiv.innerHTML = `<div class="message-time">${time}</div>${text}`;
+        elements.messages.appendChild(msgDiv);
+        elements.messages.scrollTop = elements.messages.scrollHeight;
+      }
+
+      function clearMessages() {
+        elements.messages.innerHTML = "";
+      }
+
+      // Connect to Socket.io
+      elements.connectBtn.addEventListener("click", () => {
+        const token = elements.token.value.trim();
+        if (!token) {
+          alert("Please enter JWT token");
+          return;
+        }
+
+        socket = io("http://localhost:5000", {
+          auth: { token },
+        });
+
+        socket.on("connect", () => {
+          addMessage("✅ Connected to Socket.io", "success");
+          elements.connectionStatus.textContent = "Status: Connected";
+          elements.connectionStatus.className = "status connected";
+          elements.connectBtn.disabled = true;
+          elements.disconnectBtn.disabled = false;
+          elements.joinChannelBtn.disabled = false;
+        });
+
+        socket.on("disconnect", () => {
+          addMessage("❌ Disconnected from Socket.io", "error");
+          elements.connectionStatus.textContent = "Status: Disconnected";
+          elements.connectionStatus.className = "status disconnected";
+          elements.connectBtn.disabled = false;
+          elements.disconnectBtn.disabled = true;
+          elements.joinChannelBtn.disabled = true;
+          elements.leaveChannelBtn.disabled = true;
+          elements.sendMessageBtn.disabled = true;
+        });
+
+        socket.on("error", (data) => {
+          addMessage(`❌ Error: ${data.message}`, "error");
+        });
+
+        socket.on("new_message", (data) => {
+          addMessage(
+            `📨 <b>${data.senderNickname}:</b> ${data.content}`,
+            "success"
+          );
+        });
+
+        socket.on("user_joined", (data) => {
+          addMessage(`👋 ${data.nickname} joined the channel`, "info");
+        });
+
+        socket.on("user_left", (data) => {
+          addMessage(`👋 ${data.nickname} left the channel`, "info");
+        });
+
+        socket.on("user_status", (data) => {
+          addMessage(`🔵 User ${data.userId} is now ${data.status}`, "info");
+        });
+
+        socket.on("typing_indicator", (data) => {
+          addMessage(`✍️ ${data.nickname} is typing...`, "info");
+        });
+      });
+
+      // Disconnect
+      elements.disconnectBtn.addEventListener("click", () => {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+      });
+
+      // Join Channel
+      elements.joinChannelBtn.addEventListener("click", () => {
+        const channelId = elements.channelId.value.trim();
+        if (!channelId) {
+          alert("Please enter Channel ID");
+          return;
+        }
+
+        currentChannelId = channelId;
+        socket.emit("join_channel", { channelId });
+        addMessage(`🚪 Joining channel: ${channelId}`, "info");
+        elements.leaveChannelBtn.disabled = false;
+        elements.sendMessageBtn.disabled = false;
+      });
+
+      // Leave Channel
+      elements.leaveChannelBtn.addEventListener("click", () => {
+        if (currentChannelId) {
+          socket.emit("leave_channel", { channelId: currentChannelId });
+          addMessage(`🚪 Left channel: ${currentChannelId}`, "info");
+          currentChannelId = null;
+          elements.leaveChannelBtn.disabled = true;
+          elements.sendMessageBtn.disabled = true;
+        }
+      });
+
+      // Send Message
+      elements.sendMessageBtn.addEventListener("click", () => {
+        const content = elements.messageContent.value.trim();
+        if (!content) {
+          alert("Please enter message content");
+          return;
+        }
+
+        if (!currentChannelId) {
+          alert("Please join a channel first");
+          return;
+        }
+
+        socket.emit("send_message", {
+          channelId: currentChannelId,
+          content: content,
+        });
+
+        elements.messageContent.value = "";
+        addMessage(`📤 Sent: ${content}`, "info");
+      });
+    </script>
+  </body>
+</html>
