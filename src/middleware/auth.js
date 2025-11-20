@@ -1,4 +1,3 @@
-// JWT Authentication Middleware
 const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
 
@@ -7,18 +6,14 @@ const { query } = require("../config/db");
  */
 const authenticateToken = async (req, res, next) => {
   try {
-    // Get token from Authorization header
     const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({ error: "Access token required" });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Get user from database
     const result = await query(
       "SELECT id, email, nickname, avatar_url, created_at, last_seen FROM users WHERE id = $1",
       [decoded.userId]
@@ -28,7 +23,6 @@ const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // Attach user to request
     req.user = result.rows[0];
     next();
   } catch (error) {

@@ -1,4 +1,3 @@
-// Authentication Controller
 const bcrypt = require("bcryptjs");
 const { generateToken } = require("../middleware/auth");
 const {
@@ -20,7 +19,6 @@ const register = async (req, res, next) => {
   try {
     const { email, nickname, password } = req.body;
 
-    // Validation
     if (!email || !nickname || !password) {
       return res
         .status(400)
@@ -44,7 +42,6 @@ const register = async (req, res, next) => {
         .json({ error: "Password must be at least 6 characters long" });
     }
 
-    // Check if user already exists
     const existingEmail = await findUserByEmail(email);
     if (existingEmail) {
       return res.status(409).json({ error: "Email already registered" });
@@ -54,16 +51,9 @@ const register = async (req, res, next) => {
     if (existingNickname) {
       return res.status(409).json({ error: "Nickname already taken" });
     }
-
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user
     const user = await createUser(email, nickname, passwordHash);
-
-    // Generate token
     const token = generateToken(user.id);
-
     res.status(201).json({
       message: "User registered successfully",
       token,
@@ -82,24 +72,17 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
-
-    // Find user
     const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
-
-    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
-
-    // Generate token
     const token = generateToken(user.id);
 
     res.json({
@@ -118,7 +101,6 @@ const login = async (req, res, next) => {
  */
 const getCurrentUser = async (req, res, next) => {
   try {
-    // User is already attached by authenticateToken middleware
     res.json({
       user: formatUser(req.user),
     });

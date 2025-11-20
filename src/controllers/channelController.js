@@ -1,4 +1,3 @@
-// Channel Controller
 const {
   createChannel,
   addChannelMember,
@@ -34,7 +33,6 @@ const createNewChannel = async (req, res, next) => {
         .json({ error: "Channel name must be less than 100 characters" });
     }
 
-    // Generate unique admin code
     let adminCode;
     let isUnique = false;
     while (!isUnique) {
@@ -43,7 +41,6 @@ const createNewChannel = async (req, res, next) => {
       if (!existing) isUnique = true;
     }
 
-    // Create channel
     const channel = await createChannel(
       name.trim(),
       description?.trim() || null,
@@ -52,7 +49,6 @@ const createNewChannel = async (req, res, next) => {
       creatorId
     );
 
-    // Add creator as admin member
     await addChannelMember(channel.id, creatorId, "admin");
 
     res.status(201).json({
@@ -95,8 +91,6 @@ const getChannelById = async (req, res, next) => {
     if (!channel) {
       return res.status(404).json({ error: "Channel not found" });
     }
-
-    // Check if user is member
     const isMember = await isChannelMember(id, userId);
     if (!isMember) {
       return res
@@ -123,13 +117,11 @@ const joinChannel = async (req, res, next) => {
       return res.status(400).json({ error: "Admin code is required" });
     }
 
-    // Find channel by code
     const channel = await findChannelByAdminCode(admin_code.toUpperCase());
     if (!channel) {
       return res.status(404).json({ error: "Invalid admin code" });
     }
 
-    // Check if already member
     const alreadyMember = await isChannelMember(channel.id, userId);
     if (alreadyMember) {
       return res
@@ -137,7 +129,6 @@ const joinChannel = async (req, res, next) => {
         .json({ error: "You are already a member of this channel" });
     }
 
-    // Add user as member
     await addChannelMember(channel.id, userId, "member");
 
     res.json({
@@ -158,7 +149,6 @@ const getMembers = async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Check if user is member
     const isMember = await isChannelMember(id, userId);
     if (!isMember) {
       return res
@@ -187,7 +177,6 @@ const updateChannelDetails = async (req, res, next) => {
     const { name, description, avatar_url } = req.body;
     const userId = req.user.id;
 
-    // Check if user is admin
     const isAdmin = await isChannelAdmin(id, userId);
     if (!isAdmin) {
       return res
@@ -195,7 +184,6 @@ const updateChannelDetails = async (req, res, next) => {
         .json({ error: "Only admins can update channel details" });
     }
 
-    // Build updates object
     const updates = {};
     if (name) updates.name = name.trim();
     if (description !== undefined)
@@ -226,19 +214,16 @@ const kickMember = async (req, res, next) => {
     const { id, userId: targetUserId } = req.params;
     const adminUserId = req.user.id;
 
-    // Check if requester is admin
     const isAdmin = await isChannelAdmin(id, adminUserId);
     if (!isAdmin) {
       return res.status(403).json({ error: "Only admins can remove members" });
     }
 
-    // Check if target user is channel creator
     const channel = await findChannelById(id);
     if (channel.creator_id === targetUserId) {
       return res.status(403).json({ error: "Cannot remove channel creator" });
     }
 
-    // Remove member
     const removed = await removeChannelMember(id, targetUserId);
     if (!removed) {
       return res
@@ -263,7 +248,6 @@ const deleteChannelById = async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Check if user is creator
     const channel = await findChannelById(id);
     if (!channel) {
       return res.status(404).json({ error: "Channel not found" });
@@ -295,18 +279,15 @@ const addMemberToChannel = async (req, res, next) => {
     const { user_id } = req.body;
     const adminUserId = req.user.id;
 
-    // Validation
     if (!user_id) {
       return res.status(400).json({ error: "User ID is required" });
     }
 
-    // Check if requester is admin
     const isAdmin = await isChannelAdmin(id, adminUserId);
     if (!isAdmin) {
       return res.status(403).json({ error: "Only admins can add members" });
     }
 
-    // Check if target user already a member
     const alreadyMember = await isChannelMember(id, user_id);
     if (alreadyMember) {
       return res
@@ -314,10 +295,8 @@ const addMemberToChannel = async (req, res, next) => {
         .json({ error: "User is already a member of this channel" });
     }
 
-    // Add user as member
     await addChannelMember(id, user_id, "member");
 
-    // Get updated member list
     const members = await getChannelMembers(id);
 
     res.json({
@@ -326,7 +305,6 @@ const addMemberToChannel = async (req, res, next) => {
       count: members.length,
     });
   } catch (error) {
-    // Handle case where user doesn't exist
     if (error.code === "23503") {
       return res.status(404).json({ error: "User not found" });
     }

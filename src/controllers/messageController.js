@@ -1,4 +1,3 @@
-// Message Controller
 const {
   getChannelMessages,
   getDirectMessages,
@@ -17,18 +16,13 @@ const getChannelMessagesHistory = async (req, res, next) => {
     const { page = 1, limit = 50 } = req.query;
     const userId = req.user.id;
 
-    // Check if user is member of channel
     const isMember = await isChannelMember(id, userId);
     if (!isMember) {
       return res
         .status(403)
         .json({ error: "You are not a member of this channel" });
     }
-
-    // Get pagination
     const { limit: limitNum, offset } = getPaginationOffset(page, limit);
-
-    // Get messages
     const messages = await getChannelMessages(id, limitNum, offset);
 
     res.json({
@@ -51,11 +45,7 @@ const getDirectMessagesHistory = async (req, res, next) => {
     const { userId: otherUserId } = req.params;
     const { page = 1, limit = 50 } = req.query;
     const currentUserId = req.user.id;
-
-    // Get pagination
     const { limit: limitNum, offset } = getPaginationOffset(page, limit);
-
-    // Get messages
     const messages = await getDirectMessages(
       currentUserId,
       otherUserId,

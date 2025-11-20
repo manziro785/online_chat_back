@@ -1,6 +1,5 @@
 /**
  Generate random admin code for channels
- Format: #ABC123 (uppercase letters + numbers)
  */
 const generateAdminCode = () => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -20,7 +19,7 @@ const isValidEmail = (email) => {
 };
 
 /**
- * Validate nickname (3-50 chars, alphanumeric + underscore)
+ * Validate nickname
  */
 const isValidNickname = (nickname) => {
   const nicknameRegex = /^[a-zA-Z0-9_]{3,50}$/;
@@ -28,7 +27,7 @@ const isValidNickname = (nickname) => {
 };
 
 /**
- * Format user object (remove sensitive data)
+ * Format user object
  */
 const formatUser = (user) => {
   const { password_hash, ...userWithoutPassword } = user;

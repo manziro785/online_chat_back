@@ -1,4 +1,3 @@
-// User Model - Database queries for users
 const { query } = require("../config/db");
 
 /**
@@ -31,7 +30,7 @@ const findUserByNickname = async (nickname) => {
 };
 
 /**
- * Find user by ID
+ * Find user by id
  */
 const findUserById = async (userId) => {
   const result = await query(
@@ -42,7 +41,7 @@ const findUserById = async (userId) => {
 };
 
 /**
- * Search users by nickname (partial match)
+ * Search users by nickname
  */
 const searchUsers = async (searchQuery, limit = 10) => {
   const result = await query(

@@ -2,8 +2,7 @@
 const { Pool } = require("pg");
 require("dotenv").config();
 
-// Create connection pool
-// Support both individual env vars and DATABASE_URL
+// Support both individual env
 const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
@@ -32,7 +31,7 @@ pool.on("connect", () => {
 });
 
 pool.on("error", (err) => {
-  console.error("❌ Unexpected error on idle client", err);
+  console.error("Unexpected error on idle client", err);
   process.exit(-1);
 });
 

@@ -1,4 +1,3 @@
-// Channel Model - Database queries for channels
 const { query } = require("../config/db");
 
 /**

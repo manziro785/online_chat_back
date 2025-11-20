@@ -1,4 +1,3 @@
-// Channel Routes
 const express = require("express");
 const router = express.Router();
 const {
@@ -17,16 +16,15 @@ const {
 } = require("../controllers/messageController");
 const { authenticateToken } = require("../middleware/auth");
 
-// All channel routes require authentication
 router.use(authenticateToken);
 
-// Create new channel
+// Create channel
 router.post("/", createNewChannel);
 
-// Join channel by admin code
+// Join channel
 router.post("/join", joinChannel);
 
-// Get all user's channels
+// Get all users
 router.get("/", getMyChannels);
 
 // Get specific channel
