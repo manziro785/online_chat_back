@@ -285,6 +285,55 @@ const deleteChannelById = async (req, res, next) => {
   }
 };
 
+/**
+ * Add member to channel by user ID (admin only)
+ * POST /api/channels/:id/members
+ */
+const addMemberToChannel = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { user_id } = req.body;
+    const adminUserId = req.user.id;
+
+    // Validation
+    if (!user_id) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    // Check if requester is admin
+    const isAdmin = await isChannelAdmin(id, adminUserId);
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Only admins can add members" });
+    }
+
+    // Check if target user already a member
+    const alreadyMember = await isChannelMember(id, user_id);
+    if (alreadyMember) {
+      return res
+        .status(409)
+        .json({ error: "User is already a member of this channel" });
+    }
+
+    // Add user as member
+    await addChannelMember(id, user_id, "member");
+
+    // Get updated member list
+    const members = await getChannelMembers(id);
+
+    res.json({
+      message: "Member added successfully",
+      members,
+      count: members.length,
+    });
+  } catch (error) {
+    // Handle case where user doesn't exist
+    if (error.code === "23503") {
+      return res.status(404).json({ error: "User not found" });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   createNewChannel,
   getMyChannels,
@@ -294,4 +343,5 @@ module.exports = {
   updateChannelDetails,
   kickMember,
   deleteChannelById,
+  addMemberToChannel,
 };

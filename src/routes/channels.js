@@ -10,6 +10,7 @@ const {
   updateChannelDetails,
   kickMember,
   deleteChannelById,
+  addMemberToChannel,
 } = require("../controllers/channelController");
 const {
   getChannelMessagesHistory,
@@ -45,5 +46,8 @@ router.delete("/:id/members/:userId", kickMember);
 
 // Get channel messages history
 router.get("/:id/messages", getChannelMessagesHistory);
+
+// Add new members
+router.post("/:id/members", addMemberToChannel);
 
 module.exports = router;
