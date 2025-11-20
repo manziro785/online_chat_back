@@ -10,6 +10,7 @@ const { updateLastSeen, findUserById } = require("../models/userModel");
 
 // Store connected users: userId -> socketId
 const connectedUsers = new Map();
+const onlineUsers = new Map(); // userId -> socket.id
 
 const initializeSocket = (io) => {
   // Authenticate socket connection
@@ -39,6 +40,19 @@ const initializeSocket = (io) => {
       console.error("Socket authentication error:", error);
       return next(new Error("Invalid token"));
     }
+  });
+
+  io.on("connection", (socket) => {
+    const userId = socket.handshake.auth.userId; // или берёшь из токена
+    onlineUsers.set(userId, socket.id);
+
+    // Уведомить всех, что этот пользователь онлайн
+    io.emit("user-online", { userId });
+
+    socket.on("disconnect", () => {
+      onlineUsers.delete(userId);
+      io.emit("user-offline", { userId });
+    });
   });
 
   io.on("connection", async (socket) => {
@@ -153,7 +167,6 @@ const initializeSocket = (io) => {
           isDirectMessage: false,
         };
 
-        // Broadcast to channel (including sender)
         io.to(channelId).emit("new_message", messagePayload);
 
         console.log(
